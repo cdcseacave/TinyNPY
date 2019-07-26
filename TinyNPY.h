@@ -130,6 +130,20 @@ public:
 		return shape;
 	}
 
+	char Type() const {
+		return type;
+	}
+	char& Type() {
+		return type;
+	}
+
+	bool ColMajor() const {
+		return fortranOrder;
+	}
+	bool& ColMajor() {
+		return fortranOrder;
+	}
+
 	template<typename T=uint8_t>
 	const T* Data() const {
 		return reinterpret_cast<const T*>(data);

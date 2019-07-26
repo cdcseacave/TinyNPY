@@ -32,11 +32,12 @@ int main(int argc, const char** argv)
 	}
 
 	// print array metadata
-	std::cout << "Number of values " << arr.NumValue() << "\n";
-	std::cout << "Size in bytes " << arr.SizeBytes() << "\n";
+	std::cout << "Number of values: " << arr.NumValue() << "\n";
+	std::cout << "Size in bytes: " << arr.SizeBytes() << "\n";
 	if (typeid(int) == arr.ValueType())
-		std::cout << "Value type float\n";
+		std::cout << "Value type: int\n";
 	if (typeid(float) == arr.ValueType())
-		std::cout << "Value type float\n";
+		std::cout << "Value type: float\n";
+	std::cout << "Values order: " << (arr.ColMajor() ? "col-major\n" : "row-major\n");
 	return EXIT_SUCCESS;
 }
