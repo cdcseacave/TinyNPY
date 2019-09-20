@@ -190,7 +190,6 @@ LPCSTR NpyArray::LoadNPZ(FILE* fp, uint32_t comprBytes, uint32_t uncomprBytes)
 	init();
 	const size_t offset = uncomprBytes - SizeBytes();
 	memcpy(Data(), bufferUncompr.data()+offset, SizeBytes());
-
 	return NULL;
 }
 
@@ -314,7 +313,6 @@ std::vector<char> NpyArray::CreateHeaderNPY(const shape_t& shape, char type, siz
 	else
 		add(header, (uint32_t)dict.size());
 	header.insert(header.end(), dict.begin(), dict.end());
-
 	return header;
 }
 
@@ -352,7 +350,7 @@ LPCSTR NpyArray::SaveNPY(std::string filename, bool bAppend) const
 	if (!fp)
 		return "error: unable to open file";
 
-	const std::vector<char> header = CreateHeaderNPY(*pShape, type, wordSize);
+	const std::vector<char> header = CreateHeaderNPY(*pShape, std::abs(type), wordSize);
 
 	fseek(fp, 0, SEEK_SET);
 	fwrite(header.data(), sizeof(char), header.size(), fp);
@@ -390,7 +388,7 @@ LPCSTR NpyArray::SaveNPZ(std::string zipname, std::string varname, bool bAppend)
 	if (!fp)
 		return "error: unable to open file";
 
-	const std::vector<char> npyHeader = CreateHeaderNPY(shape, type, wordSize);
+	const std::vector<char> npyHeader = CreateHeaderNPY(shape, std::abs(type), wordSize);
 	const size_t nbytes = SizeBytes() + npyHeader.size();
 
 	// get the CRC of the data to be added

@@ -21,6 +21,10 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <cmath>
+
+
+// D E F I N E S ///////////////////////////////////////////////////
 
 #define TINYNPY_MAJOR_VERSION 1
 #define TINYNPY_MINOR_VERSION 0
@@ -39,9 +43,6 @@
 #else
 #   define TINYNPY_LIB
 #endif
-
-
-// D E F I N E S ///////////////////////////////////////////////////
 
 #ifndef ASSERT
 #define ASSERT(x)
@@ -75,6 +76,10 @@ private:
 public:
 	NpyArray() : data(NULL), numValues(0), wordSize(0), type(0), fortranOrder(0) {}
 
+	template <typename T>
+	NpyArray(const shape_t& _shape, T* _data, bool _fortranOrder=false)
+		: data((uint8_t*)_data), shape(_shape), numValues(NumValue(shape)), wordSize(sizeof(T)), type(-getTypeChar(typeid(T))), fortranOrder(_fortranOrder) {}
+
 	NpyArray(const shape_t& _shape, size_t _wordSize, char _type, bool _fortranOrder=false)
 		: data(NULL), shape(_shape), numValues(NumValue(shape)), wordSize(_wordSize), type(_type), fortranOrder(_fortranOrder) {}
 
@@ -83,14 +88,17 @@ public:
 
 	NpyArray(const NpyArray&) = delete;
 
-	~NpyArray() { delete[] data; }
+	~NpyArray() { if (OwnData()) delete[] data; }
 
 
 	bool IsEmpty() const {
 		return data == NULL;
 	}
+	bool OwnData() const {
+		return type > 0;
+	}
 	void Allocate() {
-		ASSERT(data == NULL && numValues > 0);
+		ASSERT(data == NULL && numValues > 0 && OwnData());
 		data = new uint8_t[SizeBytes()];
 	}
 	void SetData(const uint8_t* _data) {
@@ -98,7 +106,8 @@ public:
 		data = const_cast<uint8_t*>(_data);
 	}
 	void Release() {
-		delete[] data;
+		if (OwnData())
+			delete[] data;
 		Clean();
 	}
 	void Clean() {
@@ -120,7 +129,7 @@ public:
 	}
 
 	const std::type_info& ValueType() const {
-		return getTypeInfo(type, wordSize);
+		return getTypeInfo(std::abs(type), wordSize);
 	}
 
 	const shape_t& Shape() const {
@@ -159,6 +168,11 @@ public:
 	}
 
 
+	// tools
+	static char getTypeChar(const std::type_info& t);
+	static const std::type_info& getTypeInfo(char t, size_t s);
+
+
 	// input
 	LPCSTR LoadNPY(FILE* fp);
 	LPCSTR LoadNPY(std::string filename);
@@ -174,21 +188,15 @@ public:
 	static LPCSTR SaveNPY(std::string filename, const std::vector<T>& data, shape_t shape=shape_t(), bool bAppend=false) {
 		if (shape.empty())
 			shape.push_back(data.size());
-		NpyArray arr(std::move(shape), sizeof(T), getTypeChar(typeid(T)));
-		arr.data = data.data();
-		LPCSTR ret = arr.SaveNPY(filename, bAppend);
-		arr.data = NULL;
-		return ret;
+		NpyArray arr(std::move(shape), const_cast<T*>(data.data()));
+		return arr.SaveNPY(filename, bAppend);
 	}
 	template<typename T>
-	static LPCSTR SaveNPZ(std::string zipname, std::string varname, const std::vector<T>& data, shape_t shape=shape_t(), bool bAppend=false) {
+	static LPCSTR SaveNPZ(std::string zipname, std::string varname, const std::vector<T>& data, shape_t shape=shape_t(), bool bAppend=true) {
 		if (shape.empty())
 			shape.push_back(data.size());
-		NpyArray arr(std::move(shape), sizeof(T), getTypeChar(typeid(T)));
-		arr.data = data.data();
-		LPCSTR ret = arr.SaveNPZ(zipname, varname, bAppend);
-		arr.data = NULL;
-		return ret;
+		NpyArray arr(std::move(shape), const_cast<T*>(data.data()));
+		return arr.SaveNPZ(zipname, varname, bAppend);
 	}
 
 private:
@@ -206,10 +214,6 @@ private:
 
 	// output
 	static std::vector<char> CreateHeaderNPY(const shape_t& shape, char type, size_t wordSize);
-
-	// tools
-	static char getTypeChar(const std::type_info& t);
-	static const std::type_info& getTypeInfo(char t, size_t s);
 
 	static std::vector<char>& add(std::vector<char>& lhs, const std::string rhs) {
 		lhs.insert(lhs.end(), rhs.cbegin(), rhs.cend());

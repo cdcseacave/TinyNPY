@@ -32,6 +32,10 @@ int main(int argc, const char** argv)
 	}
 
 	// print array metadata
+	std::cout << "Dimensions:";
+	for (size_t s: arr.Shape())
+		std::cout << " " << s;
+	std::cout << "\n";
 	std::cout << "Number of values: " << arr.NumValue() << "\n";
 	std::cout << "Size in bytes: " << arr.SizeBytes() << "\n";
 	if (typeid(int) == arr.ValueType())
